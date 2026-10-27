@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi cuenta</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+    .tarjeta { max-width: 500px; margin: 40px auto; background: #fff; padding: 28px;
+               border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
+    h1 { margin-top: 0; color: #333; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    td { padding: 10px; border-bottom: 1px solid #eee; }
+    td:first-child { font-weight: bold; color: #555; width: 45%; }
+    .boton { display: inline-block; padding: 10px 18px; background: #d93025; color: #fff;
+             text-decoration: none; border-radius: 4px; }
+    .boton:hover { background: #a52714; }
+    .mensaje { max-width: 500px; margin: 10px auto; padding: 12px; border-radius: 4px; }
+    .exito { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  {% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% for categoria, texto in mensajes %}
+      <div class="mensaje {{ categoria }}">{{ texto }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="tarjeta">
+    <h1>Bienvenido, {{ usuario.nombre }}</h1>
+    <table>
+      <tr><td>Cédula</td><td>{{ usuario.id_cliente }}</td></tr>
+      <tr><td>Nombre</td><td>{{ usuario.nombre }}</td></tr>
+      <tr><td>Saldo</td><td>$ {{ "{:,.2f}".format(usuario.saldo) }}</td></tr>
+      <tr><td>Total de abonos</td><td>$ {{ "{:,.2f}".format(usuario.total_abonos) }}</td></tr>
+    </table>
+    <a class="boton" href="{{ url_for('logout') }}">Cerrar sesión</a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acceso de clientes</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+    .contenedor { max-width: 800px; margin: 30px auto; display: flex; gap: 20px; flex-wrap: wrap; }
+    .tarjeta { flex: 1; min-width: 280px; background: #fff; padding: 24px;
+               border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
+    h1 { text-align: center; color: #333; }
+    h2 { margin-top: 0; color: #333; }
+    label { display: block; margin: 12px 0 4px; font-size: 14px; color: #555; }
+    input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 15px; }
+    button { width: 100%; margin-top: 18px; padding: 11px; border: 0; border-radius: 4px;
+             background: #1a73e8; color: #fff; font-size: 15px; cursor: pointer; }
+    button:hover { background: #1558b0; }
+    .verde { background: #2e9e5b; } .verde:hover { background: #237a46; }
+    .mensaje { max-width: 800px; margin: 10px auto; padding: 12px; border-radius: 4px; }
+    .exito { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
+  <h1>Sistema de clientes</h1>
+
+  {% with mensajes = get_flashed_messages(with_categories=true) %}
+    {% for categoria, texto in mensajes %}
+      <div class="mensaje {{ categoria }}">{{ texto }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="contenedor">
+    <div class="tarjeta">
+      <h2>Iniciar sesión</h2>
+      <form method="post" action="{{ url_for('login') }}">
+        <input type="hidden" name="accion" value="login">
+        <label for="l_cedula">Cédula</label>
+        <input id="l_cedula" name="cedula" required maxlength="20">
+        <label for="l_clave">Contraseña</label>
+        <input id="l_clave" type="password" name="clave" required>
+        <button type="submit">Entrar</button>
+      </form>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Registrarse</h2>
+      <form method="post" action="{{ url_for('login') }}">
+        <input type="hidden" name="accion" value="registro">
+        <label for="r_cedula">Cédula</label>
+        <input id="r_cedula" name="cedula" required maxlength="20">
+        <label for="r_nombre">Nombre</label>
+        <input id="r_nombre" name="nombre" required maxlength="100">
+        <label for="r_clave">Contraseña (mín. 6 caracteres)</label>
+        <input id="r_clave" type="password" name="clave" required minlength="6">
+        <button type="submit" class="verde">Crear cuenta</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
