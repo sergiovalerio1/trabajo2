@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B3D2E">
+  <meta name="color-scheme" content="light">
+  <title>{% block titulo %}Sergio Valerio{% endblock %}</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='19'%20fill='%230B3D2E'/%3E%3Cpath%20d='M13%2019%20L32%2049%20L51%2019'%20fill='none'%20stroke='%23F4F7F5'%20stroke-width='6.4'%20stroke-linecap='round'%20stroke-linejoin='round'/%3E%3Ccircle%20cx='32'%20cy='26.5'%20r='11'%20fill='%23F5B82E'/%3E%3Cpath%20d='M32.01%2033.1Q30.78%2033.1%2029.78%2032.87Q28.79%2032.64%2028.06%2032.17Q27.33%2031.7%2026.91%2030.97Q26.48%2030.24%2026.41%2029.28L29.11%2028.38Q29.17%2029.19%2029.57%2029.72Q29.98%2030.26%2030.66%2030.52Q31.34%2030.78%2032.18%2030.78Q32.99%2030.78%2033.53%2030.58Q34.08%2030.38%2034.36%2030.06Q34.64%2029.74%2034.64%2029.38Q34.64%2028.96%2034.27%2028.68Q33.91%2028.4%2033.28%2028.2Q32.64%2028%2031.8%2027.8Q30.84%2027.57%2029.92%2027.31Q29%2027.04%2028.25%2026.61Q27.5%2026.17%2027.07%2025.49Q26.64%2024.81%2026.64%2023.78Q26.64%2022.61%2027.23%2021.74Q27.83%2020.88%2028.98%2020.39Q30.13%2019.9%2031.82%2019.9Q33.49%2019.9%2034.66%2020.38Q35.83%2020.86%2036.46%2021.71Q37.09%2022.57%2037.15%2023.7L34.39%2024.49Q34.39%2023.93%2034.21%2023.51Q34.02%2023.08%2033.7%2022.81Q33.37%2022.53%2032.89%2022.38Q32.41%2022.24%2031.8%2022.24Q31.07%2022.24%2030.56%2022.41Q30.05%2022.59%2029.8%2022.86Q29.55%2023.14%2029.55%2023.51Q29.55%2023.97%2029.95%2024.26Q30.34%2024.56%2031.02%2024.76Q31.7%2024.97%2032.53%2025.16Q33.35%2025.33%2034.24%2025.59Q35.12%2025.85%2035.89%2026.27Q36.65%2026.69%2037.12%2027.41Q37.59%2028.13%2037.59%2029.22Q37.59%2030.39%2036.97%2031.27Q36.35%2032.14%2035.1%2032.62Q33.85%2033.1%2032.01%2033.1Z'%20fill='%230B3D2E'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Marca: verde bosque (confianza), esmeralda para el saldo y oro para el ahorro */
+      --bosque: #0B3D2E;
+      --bosque-2: #12503C;
+      --esmeralda: #12795A;
+      --esmeralda-texto: #0D6048;
+      --oro: #F5B82E;
+      --oro-fuerte: #E5A71A;
+      --oro-texto: #7A5300;
+      --tinta: #14201B;
+      --tinta-2: #546159;
+      --papel: #F4F7F5;
+      --blanco: #FFFFFF;
+      --linea: #DCE5E0;
+      --campo: #F4F7F5;
+      --ok: #12795A;     --ok-fondo: #E4F4EC;     --ok-borde: #AEDCC8;
+      --aviso-fondo: #FFF4D6;                      --aviso-borde: #EDCF84;
+      --error: #A8321F;  --error-fondo: #FDECE9;  --error-borde: #F2BFB6;
+      --titulos: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+      --cuerpo: Figtree, "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      margin: 0; background: var(--papel); color: var(--tinta);
+      font: 16px/1.45 var(--cuerpo); -webkit-font-smoothing: antialiased;
+    }
+    h1, h2, h3 { font-family: var(--titulos); }
+
+    /* Columna con forma de celular; en pantallas grandes queda centrada */
+    .app {
+      max-width: 440px; margin: 0 auto; background: var(--papel);
+      min-height: 100vh; min-height: 100dvh;
+      padding-bottom: calc(40px + env(safe-area-inset-bottom));
+    }
+    @media (min-width: 480px) {
+      body { padding: 24px 0; background: #D5E0DB; }
+      .app { min-height: calc(100vh - 48px); border-radius: 32px; overflow: hidden; box-shadow: 0 30px 70px rgba(11, 61, 46, .25); }
+    }
+
+    .logo { display: block; width: auto; height: 38px; --logo-fondo: var(--bosque); --logo-v: #F4F7F5; --logo-moneda: var(--oro); --logo-s: var(--bosque); --logo-texto: var(--bosque); }
+
+    /* Formularios */
+    label { display: block; margin: 0 0 7px; font-size: 14px; font-weight: 600; }
+    .campo { margin-top: 18px; }
+    .entrada {
+      display: flex; align-items: center;
+      background: var(--campo); border: 1.5px solid var(--linea); border-radius: 16px;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+    }
+    .entrada:focus-within { background: #fff; border-color: var(--esmeralda); box-shadow: 0 0 0 4px rgba(18, 121, 90, .16); }
+    .entrada input {
+      flex: 1; min-width: 0; padding: 15px 16px; border: 0; outline: 0; background: transparent;
+      font: inherit; font-size: 17px; color: var(--tinta); font-variant-numeric: tabular-nums;
+    }
+    .entrada input::placeholder { color: #8FA097; }
+    .mostrar {
+      min-height: 44px; padding: 0 16px; border: 0; background: none; cursor: pointer;
+      font: inherit; font-size: 14px; font-weight: 600; color: var(--esmeralda-texto);
+    }
+    button:focus-visible { outline: 3px solid rgba(18, 121, 90, .6); outline-offset: 2px; }
+
+    .boton {
+      display: block; width: 100%; min-height: 56px; margin-top: 24px; padding: 0 18px;
+      border: 0; border-radius: 16px; cursor: pointer;
+      font: inherit; font-size: 17px; font-weight: 700;
+      transition: background .15s, transform .05s;
+    }
+    .boton:active { transform: translateY(1px); }
+    .boton[disabled] { opacity: .7; cursor: progress; }
+    .boton-oro    { background: var(--oro); color: var(--bosque); }
+    .boton-oro:hover { background: var(--oro-fuerte); }
+    .boton-bosque { background: var(--bosque); color: #fff; }
+    .boton-bosque:hover { background: var(--bosque-2); }
+
+    /* Avisos simples (errores de conexión, sesión cerrada) */
+    .mensaje { margin: 0 0 14px; padding: 12px 14px; border: 1px solid; border-radius: 14px; font-size: 14.5px; font-weight: 500; }
+    .mensaje.error { background: var(--error-fondo); border-color: var(--error-borde); color: var(--error); }
+    .mensaje.exito { background: var(--ok-fondo);    border-color: var(--ok-borde);    color: var(--ok); }
+
+    [hidden] { display: none !important; }
+
+    {% block estilos %}{% endblock %}
+  </style>
+</head>
+<body>
+  {% block contenido %}{% endblock %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,41 +1,258 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Mi cuenta</title>
-  <style>
-    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-    .tarjeta { max-width: 500px; margin: 40px auto; background: #fff; padding: 28px;
-               border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,.1); }
-    h1 { margin-top: 0; color: #333; }
-    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-    td { padding: 10px; border-bottom: 1px solid #eee; }
-    td:first-child { font-weight: bold; color: #555; width: 45%; }
-    .boton { display: inline-block; padding: 10px 18px; background: #d93025; color: #fff;
-             text-decoration: none; border-radius: 4px; }
-    .boton:hover { background: #a52714; }
-    .mensaje { max-width: 500px; margin: 10px auto; padding: 12px; border-radius: 4px; }
-    .exito { background: #d4edda; color: #155724; }
-    .error { background: #f8d7da; color: #721c24; }
-  </style>
-</head>
-<body>
-  {% with mensajes = get_flashed_messages(with_categories=true) %}
-    {% for categoria, texto in mensajes %}
-      <div class="mensaje {{ categoria }}">{{ texto }}</div>
-    {% endfor %}
-  {% endwith %}
+{% extends "base.html" %}
 
-  <div class="tarjeta">
-    <h1>Bienvenido, {{ usuario.nombre }}</h1>
-    <table>
-      <tr><td>Cédula</td><td>{{ usuario.id_cliente }}</td></tr>
-      <tr><td>Nombre</td><td>{{ usuario.nombre }}</td></tr>
-      <tr><td>Saldo</td><td>$ {{ "{:,.2f}".format(usuario.saldo) }}</td></tr>
-      <tr><td>Total de abonos</td><td>$ {{ "{:,.2f}".format(usuario.total_abonos) }}</td></tr>
-    </table>
-    <a class="boton" href="{{ url_for('logout') }}">Cerrar sesión</a>
+{% block titulo %}Ahorros | Sergio Valerio{% endblock %}
+
+{% block estilos %}
+    /* Barra superior fija con el logo y la salida */
+    .barra {
+      position: sticky; top: 0; z-index: 5;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: calc(14px + env(safe-area-inset-top)) 18px 14px;
+      background: rgba(244, 247, 245, .92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--linea);
+    }
+    .barra .logo { height: 34px; }
+    .salir button {
+      display: grid; place-items: center; width: 44px; height: 44px;
+      border: 1.5px solid var(--linea); border-radius: 50%; cursor: pointer;
+      background: #fff; color: var(--bosque);
+    }
+    .salir button:hover { background: var(--bosque); color: #fff; border-color: var(--bosque); }
+    .salir svg { width: 20px; height: 20px; }
+
+    .contenido { padding: 20px 16px 0; }
+    .contenido > * + * { margin-top: 16px; }
+
+    /* Resumen: el total de todos los clientes, en un bloque verde */
+    .resumen { padding: 22px; border-radius: 26px; color: #fff; background: var(--bosque); }
+    .resumen .titulo { margin: 0; font-size: 15px; font-weight: 500; color: rgba(255, 255, 255, .72); }
+    .resumen .total { margin: 2px 0 0; font: 800 36px/1.1 var(--titulos); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+    .partes { position: relative; height: 10px; margin-top: 18px; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, .22); }
+    .partes i { position: absolute; inset: 0 auto 0 0; width: var(--pct); border-radius: 999px; background: var(--oro); }
+    .resumen .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+    .resumen .dato span { display: flex; align-items: center; gap: 7px; font-size: 13px; color: rgba(255, 255, 255, .72); }
+    .resumen .dato span::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+    .resumen .dato b { display: block; margin-top: 2px; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .dato.libre  { --c: #fff; }
+    .dato.guardado { --c: var(--oro); }
+
+    /* Resultado de la operación */
+    .resultado { padding: 18px; border: 1.5px solid; border-radius: 22px; }
+    .resultado.ok    { background: var(--ok-fondo);    border-color: var(--ok-borde); }
+    .resultado.aviso { background: var(--aviso-fondo); border-color: var(--aviso-borde); }
+    .resultado.error { background: var(--error-fondo); border-color: var(--error-borde); }
+    .res-cabeza { display: flex; align-items: flex-start; gap: 12px; }
+    .res-icono { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; }
+    .res-icono svg { width: 20px; height: 20px; }
+    .ok .res-icono    { background: var(--ok); color: #fff; }
+    .aviso .res-icono { background: var(--oro); color: var(--bosque); }
+    .error .res-icono { background: var(--error); color: #fff; }
+    .res-titulo  { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.3; }
+    .res-detalle { margin: 3px 0 0; font-size: 14px; color: var(--tinta-2); }
+
+    /* Barra saldo contra ahorro del cliente: se llena una vez al mostrar el resultado */
+    .reparto { position: relative; height: 12px; margin-top: 16px; border-radius: 999px; overflow: hidden; background: var(--esmeralda); }
+    .reparto i {
+      position: absolute; inset: 0 auto 0 0; width: var(--pct); border-radius: 999px; background: var(--oro);
+      animation: llenar .9s cubic-bezier(.2, .7, .2, 1) both;
+    }
+    @keyframes llenar { from { width: 0; } }
+    @media (prefers-reduced-motion: reduce) { .reparto i { animation: none; } }
+    .cifras { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+    .cifra .rotulo { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; color: var(--tinta-2); }
+    .cifra .rotulo::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+    .cifra b { display: block; margin-top: 2px; font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .cifra.saldo  { --c: var(--esmeralda); }
+    .cifra.ahorro { --c: var(--oro); }
+
+    /* Formulario: el valor se escribe en grande, como en una app de banco */
+    .pasar { padding: 22px; background: #fff; border-radius: 26px; border: 1px solid var(--linea); }
+    .pasar h2 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+    .pasar .sub { margin: 2px 0 0; color: var(--tinta-2); font-size: 14.5px; }
+    .valor-grande {
+      display: flex; align-items: center; gap: 6px; padding: 12px 16px;
+      background: var(--campo); border: 1.5px solid var(--linea); border-radius: 18px;
+      transition: border-color .15s, background .15s, box-shadow .15s;
+    }
+    .valor-grande:focus-within { background: #fff; border-color: var(--esmeralda); box-shadow: 0 0 0 4px rgba(18, 121, 90, .16); }
+    .valor-grande .signo { font: 800 30px/1 var(--titulos); color: var(--tinta-2); }
+    .valor-grande input {
+      flex: 1; min-width: 0; padding: 6px 0; border: 0; outline: 0; background: transparent;
+      font: 800 34px/1.1 var(--titulos); letter-spacing: -.02em; color: var(--tinta); font-variant-numeric: tabular-nums;
+    }
+    .valor-grande input::placeholder { color: #A9B6AE; }
+
+    /* Lista de cuentas */
+    .cuentas h2 { display: flex; align-items: baseline; justify-content: space-between; margin: 28px 4px 4px; font-size: 19px; font-weight: 800; letter-spacing: -.015em; }
+    .cuentas h2 span { font: 500 14px var(--cuerpo); color: var(--tinta-2); letter-spacing: 0; }
+    .cuentas .nota { margin: 0 4px 12px; font-size: 14px; color: var(--tinta-2); }
+    .cuentas ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+    .cuenta {
+      display: grid; grid-template-columns: 52px 1fr; align-items: center; gap: 14px;
+      width: 100%; padding: 14px 16px; border: 1px solid var(--linea); border-radius: 20px; background: #fff; cursor: pointer;
+      font: inherit; color: inherit; text-align: left;
+      transition: border-color .15s, background .15s;
+    }
+    .cuenta:hover, .cuenta:active { border-color: var(--esmeralda); background: #FBFDFC; }
+    .cuenta .ficha {
+      display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px;
+      background: var(--ok-fondo); color: var(--esmeralda-texto);
+      font: 800 15px var(--titulos); font-variant-numeric: tabular-nums;
+    }
+    .cuenta.sin-saldo .ficha { background: #EFEFEA; color: var(--tinta-2); }
+    .cuenta .montos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .cuenta small { display: block; font-size: 12px; font-weight: 500; color: var(--tinta-2); }
+    .cuenta b { font-size: 15px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .cuenta .saldo b  { color: var(--esmeralda-texto); }
+    .cuenta .ahorro b { color: var(--oro-texto); }
+    .cuenta .saldo.cero small { color: var(--error); font-weight: 700; }
+    .cuenta .saldo.cero b { color: var(--tinta-2); }
+    .cuenta .mini { grid-column: 1 / -1; position: relative; height: 5px; border-radius: 999px; background: var(--esmeralda); opacity: .85; overflow: hidden; }
+    .cuenta .mini i { position: absolute; inset: 0 auto 0 0; width: var(--pct); background: var(--oro); }
+    .cuenta.sin-saldo .mini { background: #DCE5E0; }
+    .vacio { padding: 22px 18px; color: var(--tinta-2); text-align: center; background: #fff; border-radius: 20px; border: 1px solid var(--linea); }
+{% endblock %}
+
+{% block contenido %}
+{% set total_saldo = cuentas | sum(attribute='saldo') %}
+{% set total_ahorro = cuentas | sum(attribute='ahorro') %}
+{% set total = total_saldo + total_ahorro %}
+<main class="app">
+  <header class="barra">
+    {% include "_logo.html" %}
+    <form class="salir" method="post" action="{{ url_for('logout') }}">
+      <button type="submit" aria-label="Cerrar sesión" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </form>
+  </header>
+
+  <div class="contenido">
+    {% with mensajes = get_flashed_messages(with_categories=true) %}
+      {% if mensajes %}
+      <div class="avisos">
+        {% for categoria, texto in mensajes %}
+          <div class="mensaje {{ categoria }}" role="alert">{{ texto }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+
+    {% if cuentas %}
+    <section class="resumen" aria-label="Resumen de todas las cuentas">
+      <p class="titulo">Total en todas las cuentas</p>
+      <p class="total">{{ total | moneda }}</p>
+      <div class="partes" style="--pct: {{ ((total_ahorro / total * 100) | float | round(1)) if total > 0 else 0 }}%" aria-hidden="true"><i></i></div>
+      <div class="dos">
+        <div class="dato libre"><span>Saldo</span><b>{{ total_saldo | moneda }}</b></div>
+        <div class="dato guardado"><span>Ahorro</span><b>{{ total_ahorro | moneda }}</b></div>
+      </div>
+    </section>
+    {% endif %}
+
+    {% if resultado %}
+    <section class="resultado {{ resultado.categoria }}" role="status" aria-live="polite">
+      <div class="res-cabeza">
+        <span class="res-icono" aria-hidden="true">
+          {% if resultado.categoria == 'ok' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+          {% elif resultado.categoria == 'aviso' %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 6v7"/><path d="M12 18h.01"/></svg>
+          {% else %}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          {% endif %}
+        </span>
+        <div>
+          <p class="res-titulo">{{ resultado.mensaje }}</p>
+          {% if resultado.detalle %}<p class="res-detalle">{{ resultado.detalle }}</p>{% endif %}
+        </div>
+      </div>
+
+      {% if resultado.saldo is not none %}
+        <div class="reparto" style="--pct: {{ resultado.pct_ahorro }}%" aria-hidden="true"><i></i></div>
+        <div class="cifras">
+          <div class="cifra saldo"><span class="rotulo">Saldo</span><b>{{ resultado.saldo | moneda }}</b></div>
+          <div class="cifra ahorro"><span class="rotulo">Ahorro</span><b>{{ resultado.ahorro | moneda }}</b></div>
+        </div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <form class="pasar" id="form-ahorro" method="post" action="{{ url_for('ahorrar') }}" autocomplete="off">
+      <h2>Pasar a ahorro</h2>
+      <p class="sub">Escribe el id del cliente y cuánto quiere ahorrar.</p>
+
+      <div class="campo">
+        <label for="id_cliente">ID del cliente</label>
+        <div class="entrada">
+          <input id="id_cliente" name="id_cliente" inputmode="numeric" pattern="[0-9]*" maxlength="10" required
+                 placeholder="Ej. 1001" value="{{ resultado.id if resultado else '' }}">
+        </div>
+      </div>
+
+      <div class="campo">
+        <label for="valor">Valor a ahorrar</label>
+        <div class="valor-grande">
+          <span class="signo" aria-hidden="true">$</span>
+          <input id="valor" name="valor" inputmode="decimal" maxlength="20" required placeholder="0">
+        </div>
+      </div>
+
+      <button type="submit" class="boton boton-oro" id="enviar">Pasar a ahorro</button>
+    </form>
+
+    <section class="cuentas" aria-labelledby="titulo-cuentas">
+      <h2 id="titulo-cuentas">Cuentas <span>{{ cuentas | length }} {{ 'cliente' if cuentas | length == 1 else 'clientes' }}</span></h2>
+      <p class="nota">Toca una cuenta para usar su id.</p>
+      <ul>
+        {% for c in cuentas %}
+        {% set suma = c.saldo + c.ahorro %}
+        <li>
+          <button type="button" class="cuenta{{ ' sin-saldo' if c.saldo == 0 }}" data-id="{{ c.id }}" aria-label="Usar el id {{ c.id }}">
+            <span class="ficha">{{ c.id }}</span>
+            <span class="montos">
+              <span class="monto saldo{{ ' cero' if c.saldo == 0 }}"><small>{{ 'Sin saldo' if c.saldo == 0 else 'Saldo' }}</small><b>{{ c.saldo | moneda }}</b></span>
+              <span class="monto ahorro"><small>Ahorro</small><b>{{ c.ahorro | moneda }}</b></span>
+            </span>
+            <span class="mini" style="--pct: {{ ((c.ahorro / suma * 100) | float | round(1)) if suma > 0 else 0 }}%" aria-hidden="true"><i></i></span>
+          </button>
+        </li>
+        {% else %}
+        <li class="vacio">No hay cuentas para mostrar.</li>
+        {% endfor %}
+      </ul>
+    </section>
   </div>
-</body>
-</html>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var form = document.getElementById("form-ahorro");
+    var idCampo = document.getElementById("id_cliente");
+    var valor = document.getElementById("valor");
+    var enviar = document.getElementById("enviar");
+    var reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Tocar una cuenta copia su id al formulario y pasa al valor
+    document.querySelectorAll("[data-id]").forEach(function (fila) {
+      fila.addEventListener("click", function () {
+        idCampo.value = fila.getAttribute("data-id");
+        form.scrollIntoView({ behavior: reducido ? "auto" : "smooth", block: "center" });
+        valor.focus({ preventScroll: true });
+      });
+    });
+
+    // Evita enviar dos veces la misma operación si se toca el botón dos veces
+    form.addEventListener("submit", function () {
+      enviar.disabled = true;
+      enviar.textContent = "Pasando…";
+    });
+    window.addEventListener("pageshow", function () {
+      enviar.disabled = false;
+      enviar.textContent = "Pasar a ahorro";
+    });
+  })();
+</script>
+{% endblock %}

@@ -2,12 +2,14 @@ import os
 
 import psycopg
 from psycopg.rows import dict_row
-from werkzeug.security import check_password_hash, generate_password_hash
 
 
 class CServicios:
     """Acceso a datos: abre y cierra una conexión en cada llamada
-    (Vercel es serverless, no hay procesos persistentes)."""
+    (Vercel es serverless, no hay procesos persistentes).
+
+    Aquí no hay lógica de negocio: todo vive en la base de datos
+    (procedimiento ahorrar y función listar_ahorros, ver schema.sql)."""
 
     def _conectar(self):
         dsn = os.environ.get("DATABASE_URL")
@@ -16,33 +18,24 @@ class CServicios:
         # prepare_threshold=None: compatible con el pooler (PgBouncer) de Neon
         return psycopg.connect(dsn, row_factory=dict_row, prepare_threshold=None)
 
-    def registrar_usuario(self, cedula, nombre, clave):
-        """Devuelve (ok: bool, mensaje: str)."""
-        clave_hash = generate_password_hash(clave)
-        try:
-            # 'with' hace commit al salir sin error y cierra la conexión
-            with self._conectar() as conn:
-                conn.execute(
-                    
-                    "SELECT registrar_usuario(%s::varchar, %s::varchar, %s::varchar)",
-                    (cedula, nombre, clave_hash),
-                )
-            return True, "Usuario registrado correctamente. Ya puedes iniciar sesión."
-        except psycopg.errors.UniqueViolation:
-            return False, "Esa cédula ya está registrada."
+    def ahorrar(self, id_cliente, valor):
+        """Llama al procedimiento ahorrar(). Resta 'valor' al saldo y lo suma al ahorro.
 
-    def consultar_usuario(self, cedula):
-        """Devuelve el usuario (dict, incluye 'clave') o None."""
+        Devuelve un dict con: o_codigo, o_mensaje, o_saldo, o_ahorro.
+        o_codigo es OK, SIN_SALDO, SALDO_INSUFICIENTE, NO_EXISTE o VALOR_INVALIDO.
+        """
+        # 'with' hace commit al salir sin error y cierra la conexión.
+        # Los NULL son los parámetros INOUT: el procedimiento los llena y los devuelve.
         with self._conectar() as conn:
             return conn.execute(
-
-                "SELECT * FROM obtener_usuario(%s::varchar)", (cedula,)
+                "CALL ahorrar(%s::integer, %s::numeric, "
+                "NULL::text, NULL::text, NULL::numeric, NULL::numeric)",
+                (id_cliente, valor),
             ).fetchone()
 
-    def iniciar_sesion(self, cedula, clave):
-        """Verifica el hash. Devuelve el usuario SIN la clave, o None."""
-        usuario = self.consultar_usuario(cedula)
-        if usuario is None or not check_password_hash(usuario["clave"], clave):
-            return None
-        usuario.pop("clave")
-        return usuario
+    def listar_ahorros(self):
+        """Lista de dicts con id, saldo y ahorro de todos los clientes."""
+        with self._conectar() as conn:
+            return conn.execute(
+                "SELECT id, saldo, ahorro FROM listar_ahorros()"
+            ).fetchall()
